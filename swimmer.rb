@@ -26,7 +26,7 @@ java_import 'java.awt.Color'
                   :is_same_species,
                   :name
     attr_reader :brain
-    def initialize(color: Color::WHITE, size: 10, species: '', start_food: 1000,
+    def initialize(color: Color::WHITE, size: 10, species: nil, start_food: 1000,
                    x: 0.0, y: 0.0, speed: 0.0, rotation: 0.0, 
                    goal_x: 0.0, goal_y: 0.0, 
                    width: 0.0, height: 0.0,
@@ -49,11 +49,11 @@ java_import 'java.awt.Color'
       @min_distance = goal_distance
       @fitness = 0.0
       @fitness = fitness_function
-      @species = species
+      @species = species ||= random_name
       @mutation_chance = 0.1
       @hearing = 0.0
       @is_same_species = false
-      @name = name ||= @species
+      @name = name ||= species 
     end
     def to_hash
       hash = {}
@@ -267,12 +267,55 @@ java_import 'java.awt.Color'
       end
     end
     def mutate_name(chance = 0.01)
-    
+      n = @name
+      vowels = ['a','e','i','o','u','y']
+      consonants = ('a'..'z').to_a - vowels
+      (0..(rand * 3).floor + 1).each do |i|
+        if n.length >= 10 || rand < 0.5
+          index = (rand * n.length).floor
+          if vowels.include? n[index]
+            n[index] = vowels[(rand * vowels.length).floor]
+          else
+            n[index] = consonants[(rand * consonants.length).floor]
+          end
+        else
+          index = (rand * n.length - 1).floor
+          if vowels.include? n[index]
+            letter = vowels[(rand * vowels.length).floor]
+            if rand < 0.1
+              n = n[0..index] + letter + n[index + 1..-1]
+            else
+              n[index] = letter
+            end
+          else
+            letter = consonants[(rand * consonants.length).floor]
+            if rand < 0.1
+              n = n[0..index] + letter + n[index + 1..-1]
+            else
+              n[index] = letter
+            end
+          end
+        end
+      end
+      @name = n.capitalize
     end
     def goal_theta
       x = (@x - @goal_x)
       y = (@y - @goal_y)
       Math.tan(x/y) * 360 / (2 * Math::PI)
+    end
+    def random_name
+      n = ''
+      vowels = ['a','e','i','o','u','y']
+      consonants = ('a'..'z').to_a - vowels
+      (0..(rand * 6).floor + 4).each do |i|
+        if rand < 0.5
+          n += vowels[(rand * vowels.length).floor]
+        else
+          n += consonants[(rand * consonants.length).floor]
+        end
+      end
+      n.capitalize
     end
   end
 #end
