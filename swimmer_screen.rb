@@ -249,7 +249,7 @@ def every_so_many_seconds(seconds)
     end
   end
 end
-frame = JFrame.new('test', false)
+frame = JFrame.new('test')
 frame.set_default_close_operation(JFrame::EXIT_ON_CLOSE)
 frame.set_size(1000, 1000)
 filename = nil
