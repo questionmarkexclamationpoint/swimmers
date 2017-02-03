@@ -14,8 +14,8 @@ java_import 'javax.swing.JOptionPane'
 #module Swimmers
   class SwimmerScreen < JPanel
     attr_reader :width, :height
-    attr_accessor :goal_x, :goal_y, :start_food, :max, :swimmers, :goal_size, :num_swimmers
-    def initialize(num_swimmers: 10, width: 100, height: 100, start_food: 1000)
+    attr_accessor :goal_x, :goal_y, :start_food, :max, :swimmers, :goal_size, :num_swimmers, :num_species
+    def initialize(num_swimmers: 10, width: 100, height: 100, start_food: 1000, num_species: 10)
       super()
       @width = width
       @height = height
@@ -26,17 +26,18 @@ java_import 'javax.swing.JOptionPane'
       @swimmers = []
       @num_swimmers = num_swimmers
       @start_food = start_food
-      (0..num_swimmers - 1).each do |i|
-        @swimmers << Swimmer.new(color: Color.new(rand, rand, rand), species: i, start_food: @start_food,
+      @num_species = num_species
+      @max = []
+      (0..@num_species - 1).each do |i|
+        @max << []
+        @max[-1] << Swimmer.new(color: Color.new(rand, rand, rand), species: i, start_food: @start_food,
                                  x: rand * width, y: rand * height,
                                  rotation: rand * 360, speed: rand * 10,
                                  goal_x: @goal_x, goal_y: @goal_y,
                                  width: width, height: height)
       end
-      @max = []
-      (0..@num_swimmers - 1).each do |i|
-        @max << []
-        @max[-1] << @swimmers[i]
+      (0..num_swimmers - 1).each do |i|
+        @swimmers << @max[i][0]
       end
     end
     def width=(w)
@@ -78,6 +79,7 @@ java_import 'javax.swing.JOptionPane'
       end
       hash = {}
       hash['num_swimmers'] = @num_swimmers
+      hash['num_species'] = @num_species
       hash['goal_x'] = @goal_x
       hash['goal_y'] = @goal_y
       hash['goal_size'] = @goal_size
@@ -94,9 +96,13 @@ java_import 'javax.swing.JOptionPane'
       end
       hash
     end
+    def equal?(other_screen)
+      false
+    end
     def self.from_hash(hash)
       s = SwimmerScreen.new
       s.num_swimmers = hash['num_swimmers']
+      s.num_species = hash['num_species']
       s.goal_x = hash['goal_x']
       s.goal_y = hash['goal_y']
       s.goal_size = hash['goal_size']
@@ -221,6 +227,9 @@ java_import 'javax.swing.JOptionPane'
       end
       graphics.draw_line(line_x, line_y, swimmer.x + line_right, swimmer.y + line_right)
       graphics.fill_oval(swimmer.x, swimmer.y, swimmer.size, swimmer.size)
+      color = Color.new(Color.hs_bto_rgb(swimmer.speech, 1.0, 1.0)) #this jruby function is improperly named...
+      graphics.set_color(color)
+      graphics.fill_oval(swimmer.x + swimmer.size / 4, swimmer.y + swimmer.size / 4, swimmer.size / 2, swimmer.size / 2)
     end
     def hit_goal(swimmer)
       g = Ellipse2D::Double.new(@goal_x, @goal_y, @goal_size, @goal_size)
@@ -240,12 +249,12 @@ def every_so_many_seconds(seconds)
     end
   end
 end
-frame = JFrame.new('test')
+frame = JFrame.new('test', false)
 frame.set_default_close_operation(JFrame::EXIT_ON_CLOSE)
 frame.set_size(1000, 1000)
-filename = 'save'
+filename = nil
 if filename.nil?
-  s = SwimmerScreen.new(width: 1000, height: 1000, num_swimmers: 10, start_food: 2500)
+  s = SwimmerScreen.new(width: 1000, height: 1000, num_swimmers: 2, start_food: 2500, num_species: 10)
 else
   hash = JSON.parse(File.read(filename))
   s = SwimmerScreen.from_hash(hash)
