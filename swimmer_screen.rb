@@ -14,7 +14,7 @@ java_import 'javax.swing.JOptionPane'
 #module Swimmers
   class SwimmerScreen < JPanel
     attr_reader :width, :height
-    attr_accessor :goal_x, :goal_y, :start_food, :max, :swimmers, :goal_size, :num_swimmers, :num_species
+    attr_accessor :goal_x, :goal_y, :start_food, :max, :swimmers, :goal_size, :num_swimmers, :num_species, :species_index
     def initialize(num_swimmers: 10, width: 100, height: 100, start_food: 1000, num_species: 10)
       super()
       @width = width
@@ -27,14 +27,16 @@ java_import 'javax.swing.JOptionPane'
       @num_swimmers = num_swimmers
       @start_food = start_food
       @num_species = num_species
+      @species_index = {}
       @max = []
       (0..@num_species - 1).each do |i|
         @max << []
-        @max[-1] << Swimmer.new(color: Color.new(rand, rand, rand), species: i, start_food: @start_food,
+        @max[-1] << Swimmer.new(color: Color.new(rand, rand, rand), start_food: @start_food,
                                  x: rand * width, y: rand * height,
                                  rotation: rand * 360, speed: rand * 10,
                                  goal_x: @goal_x, goal_y: @goal_y,
                                  width: width, height: height)
+        @species_index[@max[-1][-1].species] = i
       end
       (0..num_swimmers - 1).each do |i|
         @swimmers << @max[i][0]
@@ -80,6 +82,10 @@ java_import 'javax.swing.JOptionPane'
       hash = {}
       hash['num_swimmers'] = @num_swimmers
       hash['num_species'] = @num_species
+      hash['species_index'] = {}
+      @species_index.each do |key, value|
+        hash['species_index'][key] = value
+      end
       hash['goal_x'] = @goal_x
       hash['goal_y'] = @goal_y
       hash['goal_size'] = @goal_size
@@ -103,6 +109,10 @@ java_import 'javax.swing.JOptionPane'
       s = SwimmerScreen.new
       s.num_swimmers = hash['num_swimmers']
       s.num_species = hash['num_species']
+      s.species_index = {}
+      hash['species_index'].each do |key, value|
+        s.species_index[key] = value
+      end
       s.goal_x = hash['goal_x']
       s.goal_y = hash['goal_y']
       s.goal_size = hash['goal_size']
@@ -143,9 +153,9 @@ java_import 'javax.swing.JOptionPane'
       end
       @swimmers.each do |swimmer|
         if hit_goal(swimmer) 
-          u = Util.random_normal * @max[swimmer.species].length / 2
-          u = [u.abs.floor, @max[swimmer.species].length - 1].max
-          s = swimmer.feed(@max[swimmer.species][u])
+          u = Util.random_normal * @max[@species_index[swimmer.species]].length / 2
+          u = [u.abs.floor, @max[@species_index[swimmer.species]].length - 1].max
+          s = swimmer.feed(@max[@species_index[swimmer.species]][u])
           unless @swimmers.length >= @num_swimmers * 5
             s.each do |i|
               @swimmers << i
@@ -160,14 +170,15 @@ java_import 'javax.swing.JOptionPane'
             swimmer.is_same_species = swimmer.species == @swimmers[0].is_same_species
           end
         elsif swimmer.food <= 0
-          if swimmer.fitness > @max[swimmer.species][-1].fitness
-            if @max[swimmer.species].length < 10
-              @max[swimmer.species] << swimmer
+          if swimmer.fitness > @max[@species_index[swimmer.species]][-1].fitness
+            if @max[@species_index[swimmer.species]].length < 10
+              @max[@species_index[swimmer.species]] << swimmer
             else
-              @max[swimmer.species][-1] = swimmer
+              @max[@species_index[swimmer.species]][-1] = swimmer
             end
             puts 'Good:'
             puts "  Species #{swimmer.species},"
+            puts "  Name #{swimmer.name},"
             puts "  Fitness #{swimmer.fitness},"
             puts "  Food #{swimmer.food_found},"
             puts "  Gen #{swimmer.gen}"
@@ -195,6 +206,7 @@ java_import 'javax.swing.JOptionPane'
         puts "#{@best != @max[0][0] ? 'New ' : ''}Record:"
         @best = @max[0][0]
         puts "  Species #{@best.species},"
+        puts "  Name #{@best.name},"
         puts "  Fitness #{@best.fitness},"
         puts "  Food #{@best.food_found},"
         puts "  Gen #{@best.gen}"
